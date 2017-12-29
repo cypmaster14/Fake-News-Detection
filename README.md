@@ -6,3 +6,6 @@
 - sklearn
 - scikit-learn
 - pandas
+- flask
+- sqlalchemy
+- psycopg2
