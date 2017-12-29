@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.pyplot import *
 from sklearn import metrics
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.naive_bayes import GaussianNB
 
 warnings.filterwarnings('ignore')
@@ -11,52 +11,62 @@ warnings.filterwarnings('ignore')
 cfg.dir
 
 pd.set_option('display.max_colwidth', 30000)
+
+columns_header = ['Retweets', 'Favorites', 'New_Feature', 'Class']
+
 cols = ['Class']
 mycol = ['Retweets', 'Favorites', 'New_Feature']
 
 
 class NbClassifier:
-    def __init__(self, file_name):
-        self.file = pd.read_csv(file_name, sep=',')
-        X = np.array(self.file.values[:, :3])
-        x = self.file.Class
-        self.NB = GaussianNB()
-        self.NB.fit(X, x)
 
-    def classify_all(self, filename):
-        self.test_file = pd.read_csv(filename, sep=',', index_col=None)
-        test = np.array(self.test_file.values[:, :3])
-        test_data_class = self.test_file.Class
-        self.output = self.NB.predict(test)
-        probability = self.NB.predict_proba(test)
-        cm = metrics.confusion_matrix(test_data_class, self.output)
-        accuracy = accuracy_score(test_data_class, self.output)
-        print("Accuracy for Naive Bayes")
-        print(accuracy * 100)
-        print("Confusion Matrix for Naive Bayes")
-        print(cm)
-        return self.output, accuracy * 100
+    def __init__(self, file_name):
+        self.train_file = pd.read_csv(file_name, sep=",", usecols=columns_header, index_col=None)
+
+        train_data = np.array(self.train_file.values[:, :3])
+        train_data_labels = self.train_file['Class']
+
+        # init the model
+        self.NB = GaussianNB()
+        self.NB.fit(train_data, train_data_labels)
+
+        self.accuracy = 0
+
+    def classify_testdata(self, testing_file):
+        self.test_file = pd.read_csv(testing_file, sep=',', usecols=columns_header, index_col=None)
+        self.test_data = np.array(self.test_file.values[:, :3])
+        self.test_data_predicted_label = self.NB.predict(self.test_data)
+        return self.test_data_predicted_label
 
     def classify(self, x):
         output = self.NB.predict(x)
         probability = self.NB.predict_proba(x)
         return output, probability
 
-    def plot_a(self):
-        color = ['red' if l == 1 else 'green' for l in self.file['Class']]
-        color_test = ['black' if l == 1 else 'blue' for l in self.output]
+    def plot(self):
+        color = ['red' if label == 1 else 'green' for label in self.train_file['Class']]
+        color_test = ['black' if label == 1 else 'blue' for label in self.test_data_predicted_label]
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(self.file['Retweets'], self.file['Favorites'], self.file['New_Feature'],
+        ax.scatter(self.train_file['Retweets'], self.train_file['Favorites'], self.train_file['New_Feature'],
                    zdir='z', s=20, depthshade=True, color=color, marker='^')
-        ax.scatter(self.test_file['Retweets'], self.test_file['Favorites'], self.test_file['New_Feature'], zdir='z',
-                   s=20, depthshade=True, color=color_test, marker='^')
+        ax.scatter(self.test_file['Retweets'], self.test_file['Favorites'], self.test_file['New_Feature'],
+                   zdir='z', s=20, depthshade=True, color=color_test, marker='^')
         plt.title("NB Classifier")
         ax.set_xlabel('X axis')
         ax.set_ylabel('Y axis')
         ax.set_zlabel('Z axis')
         ax.legend(loc=2)
         plt.show()
+
+    def confusion_matrix(self, predict):
+        accuracy = accuracy_score(self.test_file['Class'], predict)
+        accuracy = accuracy * 100
+        print("Accuracy for NB")
+        print(accuracy)
+        print("Confusion Matrix for KNN")
+        print(confusion_matrix(self.test_file['Class'], predict))
+        return accuracy
 
 
 if __name__ == "__main__":

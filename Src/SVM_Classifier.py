@@ -16,42 +16,61 @@ class SVMClassifier(object):
 
     def __init__(self, file_name):
         # Load training csv
-        self.Processed_file = pd.read_csv(file_name, sep=',', usecols=My_col, index_col=None)
+        self.train_file = pd.read_csv(file_name, sep=',', usecols=My_col, index_col=None)
 
-        # Create arbitrary dataset for example
-        df = pd.DataFrame({'x': self.Processed_file['Retweets'],
-                           'y': self.Processed_file['Favorites'],
-                           'Class': self.Processed_file['Class']}
-                          )
-        X = np.array(self.Processed_file.values[:, :3])
-        Y = self.Processed_file['Class']
+        train_data = np.array(self.train_file.values[:, :3])
+        train_data_labels = self.train_file['Class']
         # init the model
         self.SVM = svm.SVC(kernel='linear', C=1.0, gamma=2)
-        self.SVM.fit(X, Y.values)
+        self.SVM.fit(train_data, train_data_labels.values)
+
+        self.accuracy = 0
+        self.output = []
 
     def classify_testdata(self, filename):
+        """
+          Function that classifies the testing dataset
+          :param filename: The filename that contains the testing dataset
+          :return: The predicted labels for the testing dataset
+        """
+
         self.test_file = pd.read_csv(filename, sep=',', usecols=My_col, index_col=None)
-        self.test = np.array([self.test_file['Retweets'], self.test_file['Favorites'], self.test_file['New_Feature']])
-        self.test = np.array(self.test_file.values[:, :3])
-        self.predicted_label = self.SVM.predict(self.test)
-        return self.predicted_label
+        self.test_data = np.array(
+            [self.test_file['Retweets'], self.test_file['Favorites'], self.test_file['New_Feature']])
+        self.test_data = np.array(self.test_file.values[:, :3])
+        self.test_data_predicted_label = self.SVM.predict(self.test_data)
+        return self.test_data_predicted_label
 
     def classify(self, x):
+        """
+        Function that classifies an entry
+        :param x: Entry to be predicted
+        :return: The predicted label
+        """
         output = self.SVM.predict(x)
         return output
 
-    def confusionMatrix(self, predict):
-        Accuracy_Score = accuracy_score(self.test_file['Class'], predict)
+    def confusion_matrix(self, predict):
+        """
+        Function that computes confusion matrix to evaluate the accuracy of the classification
+        :param predict: The predicted labels that is used to compute the confusion matrix
+        :return: The confusion matrix
+        """
+        accuracy = accuracy_score(self.test_file['Class'], predict)
+        accuracy = accuracy * 100
         print("Accuracy for SVM")
-        accuracy = Accuracy_Score * 100
         print(accuracy)
         print("Confusion Matrix for SVM")
         print(confusion_matrix(self.test_file['Class'], predict))
         return accuracy
 
     def plot(self):
-        color = ['red' if l == 1 else 'black' for l in self.Processed_file['Class']]
-        color_test = ['green' if l == 1 else 'blue' for l in self.predicted_label]
+        """
+        Function that builds the 3D plot
+        :return:
+        """
+        color = ['red' if l == 1 else 'black' for l in self.train_file['Class']]
+        color_test = ['green' if l == 1 else 'blue' for l in self.test_data_predicted_label]
         z = lambda x, y: (-self.SVM.intercept_[0] - self.SVM.coef_[0][0] * x - self.SVM.coef_[0][1]) / \
                          self.SVM.coef_[0][2]
         tmp = np.linspace(1, 140, 14)
@@ -59,8 +78,8 @@ class SVMClassifier(object):
         fig = plt.figure()
         ax = Axes3D(fig)
         ax.plot_surface(x, y, z(x, y))
-        ax.scatter(self.Processed_file['Retweets'], self.Processed_file['Favorites'],
-                   self.Processed_file['New_Feature'], zdir='z', s=20, depthshade=True, color=color, marker='*')
+        ax.scatter(self.train_file['Retweets'], self.train_file['Favorites'],
+                   self.train_file['New_Feature'], zdir='z', s=20, depthshade=True, color=color, marker='*')
         ax.scatter(self.test_file['Retweets'], self.test_file['Favorites'], self.test_file['New_Feature'], zdir='z',
                    s=20, depthshade=True, color=color_test, marker='*')
         plt.title("SVM Classifier")

@@ -1,9 +1,9 @@
 import math
 
-import Code.Src.Config as cfg
-import Code.Src.KNN_Classifier as knn
-import Code.Src.NB_Classfier as nb
-import Code.Src.SVM_Classifier as svm
+import Src.Config as cfg
+import Src.KNN_Classifier as knn
+import Src.NB_Classfier as nb
+import Src.SVM_Classifier as svm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -31,24 +31,24 @@ if __name__ == "__main__":
     for test in test_data:
         try:
             test = test.reshape(1, 3)
-            a, b = nb_classifier.classify(test)
-            pw1 = abs((b[0][0]) / (b[0][0] + b[0][1]))
-            pw2 = abs((b[0][1]) / (b[0][0] + b[0][1]))
+            output, probability = nb_classifier.classify(test)
+            pw1 = abs((probability[0][0]) / (probability[0][0] + probability[0][1]))
+            pw2 = abs((probability[0][1]) / (probability[0][0] + probability[0][1]))
             pw1_normalized = math.ceil(pw1 * 100.0) / 100.0
             pw2_normalized = math.ceil(pw2 * 100.0) / 100.0
             error = min(pw1_normalized, pw2_normalized)
             error_rate = math.ceil(error * 100.0) / 100.0
             if error_rate > 0.2:
-                if a[0] == 1:
-                    partially_credible.append(a[0])
+                if output[0] == 1:
+                    partially_credible.append(output[0])
                 else:
-                    partially_spam.append(a[0])
+                    partially_spam.append(output[0])
                 # print(" ")
             else:
-                if a[0] == 1:
-                    fully_credible.append(a[0])
+                if output[0] == 1:
+                    fully_credible.append(output[0])
                 else:
-                    fully_spam.append(a[0])
+                    fully_spam.append(output[0])
         except:
             print("Error")
 

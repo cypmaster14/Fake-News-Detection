@@ -9,61 +9,75 @@ import Src.Config as cfg
 cfg.dir
 warnings.filterwarnings("ignore")
 pd.set_option('display.max_colwidth', 30000)
-My_col = ['Retweets', 'Favorites', 'New_Feature', 'Class']
+columns_header = ['Retweets', 'Favorites', 'New_Feature', 'Class']
 
 
 class KNNClassifier(object):
 
     def __init__(self, file_name):
-        # Load traingin csv//
-        self.Processed_file = pd.read_csv(file_name, sep=',', usecols=My_col, index_col=None)
+        # Load training csv//
+        self.train_file = pd.read_csv(file_name, sep=',', usecols=columns_header, index_col=None)
 
-        # Create arbitrary dataset for example
-        df = pd.DataFrame({'x': self.Processed_file['Retweets'],
-                           'y': self.Processed_file['Favorites'],
-                           'Class': self.Processed_file['Class']}
-                          )
-        X = np.array(self.Processed_file.values[:, :3])
-        Y = self.Processed_file['Class']
+        train_data = np.array(self.train_file.values[:, :3])
+        train_data_labels = self.train_file['Class']
         # init the model
         self.KNN = KNeighborsClassifier(n_neighbors=101)
-        self.KNN.fit(X, Y.values)
+        self.KNN.fit(train_data, train_data_labels.values)
 
     def classify_testdata(self, filename):
-        self.test_file = pd.read_csv(filename, sep=',', usecols=My_col, index_col=None)
-        self.test = np.array([self.test_file['Retweets'], self.test_file['Favorites'], self.test_file['New_Feature']])
-        self.test = np.array(self.test_file.values[:, :3])
-        self.predicted_label = self.KNN.predict(self.test)
-        return self.predicted_label
+        """
+        Function that classifies the testing dataset
+        :param filename: The filename that contains the testing dataset
+        :return: The predicted labels for the testing dataset
+        """
+
+        self.test_file = pd.read_csv(filename, sep=',', usecols=columns_header, index_col=None)
+        self.test_data = np.array(self.test_file.values[:, :3])
+        self.test_data_predicted_label = self.KNN.predict(self.test_data)
+        return self.test_data_predicted_label
 
     def classify(self, x):
+        """
+        Function that classifies an entry
+        :param x: Entry to be predicted
+        :return: The predicted label
+        """
         output = self.KNN.predict(x)
         return output
 
+    def confusion_matrix(self, predict):
+        """
+        Function that computes confusion matrix to evaluate the accuracy of the classification
+        :param predict: The predicted labels that is used to compute the confusion matrix
+        :return: The confusion matrix
+        """
+        accuracy = accuracy_score(self.test_file['Class'], predict)
+        accuracy = accuracy * 100
+        print("Accuracy for KNN")
+        print(accuracy)
+        print("Confusion Matrix for KNN")
+        print(confusion_matrix(self.test_file['Class'], predict))
+        return accuracy
+
     def plot(self):
-        color = ['red' if l == 1 else 'green' for l in self.Processed_file['Class']]
-        color_test = ['black' if l == 1 else 'blue' for l in self.predicted_label]
+        """
+        Function that builds the 3D plot
+        :return:
+        """
+        color = ['red' if label == 1 else 'green' for label in self.train_file['Class']]
+        color_test = ['black' if label == 1 else 'blue' for label in self.test_data_predicted_label]
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(self.Processed_file['Retweets'], self.Processed_file['Favorites'],
-                   self.Processed_file['New_Feature'], zdir='z', s=20, depthshade=True, color=color, marker='^')
-        ax.scatter(self.test_file['Retweets'], self.test_file['Favorites'], self.test_file['New_Feature'], zdir='z',
-                   s=20, depthshade=True, color=color_test, marker='^')
+        ax.scatter(self.train_file['Retweets'], self.train_file['Favorites'], self.train_file['New_Feature'],
+                   zdir='z', s=20, depthshade=True, color=color, marker='^')
+        ax.scatter(self.test_file['Retweets'], self.test_file['Favorites'], self.test_file['New_Feature'],
+                   zdir='z', s=20, depthshade=True, color=color_test, marker='^')
         plt.title("KNN Classifier")
         ax.set_xlabel('X axis')
         ax.set_ylabel('Y axis')
         ax.set_zlabel('Z axis')
         ax.legend(loc=2)
         plt.show()
-
-    def confusionMatrix(self, predict):
-        Accuracy_Score = accuracy_score(self.test_file['Class'], predict)
-        accuracy = Accuracy_Score * 100
-        print("Accuracy for KNN")
-        print(accuracy)
-        print("Confusion Matrix for KNN")
-        print(confusion_matrix(self.test_file['Class'], predict))
-        return accuracy
 
 
 if __name__ == "__main__":

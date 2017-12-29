@@ -12,36 +12,40 @@ My_col = ['Date', 'Tweet_Text', 'Tweet_Id', 'User_Id', 'User_Name', 'User_Screen
           'Class']
 
 
-class Data_preprocessing(object):
+class PreProcessing(object):
 
-    def __init__(self, file_name, type):
+    def __init__(self, file_name, file_type):
+        self.file_name = file_name
+        self.type = file_type
+
+    def process(self):
+
         try:
-            Raw_file = pd.read_csv(file_name, sep=',', usecols=My_col, index_col=None, quoting=3, encoding='utf-8')
-            self.Data_preprocessed_file = Raw_file.dropna(subset=My_col)
+            raw_file = pd.read_csv(self.file_name, sep=',', usecols=My_col, index_col=None, quoting=3, encoding='utf-8')
+            self.Data_preprocessed_file = raw_file.dropna(subset=My_col)
         except (FileNotFoundError, FileExistsError, MemoryError) as e:
             print("file is not in correct format")
+            print(e)
 
         try:
             prefix = '_Cleaned.csv'
-            file = type + prefix
+            file = self.type + prefix
             self.Data_preprocessed_file.to_csv(file, header=None, sep=',', index=False)
-        except PermissionError:
+        except PermissionError as e:
             print("file is opened by someone, please rerun after closing the file")
+            print(e)
+
         self.Data_preprocessed_file['Date'] = self.Data_preprocessed_file['Date'].astype(str)
-
-        def process_date(x):
-            try:
-                return x[x.find("[") + 1: x.find("]") - 1]
-            except (ValueError, SyntaxError) as e:
-                print("Check the data in a file")
-
         try:
-            self.Data_preprocessed_file['Date'] = self.Data_preprocessed_file['Date'].map(lambda x: process_date(x))
+            self.Data_preprocessed_file['Date'] = self.Data_preprocessed_file['Date'] \
+                .map(lambda x: PreProcessing.process_date_lambda(x))
+
         except(TypeError, SyntaxError, SystemExit, SyntaxWarning) as e:
             print("Check the data in a file")
 
         try:
             self.Data_preprocessed_file = self.Data_preprocessed_file.sort_values(by='Date')
+
         except ValueError:
             print("Values are not in date format")
 
@@ -60,33 +64,11 @@ class Data_preprocessing(object):
         self.Data_preprocessed_file['Length_of_User_Name'] = self.Data_preprocessed_file['User_Screen_Name'].map(
             lambda x: len(str(x)))
 
-        Spam_count = {}
-
-        def Spam_word_count(Word):
-            Spam_list = ['Zoo', 'Tiger', 'Little girl', 'penguin']
-            for i in Spam_list:
-                try:
-                    Spam_count[i] = Word.count(i)
-                except ValueError:
-                    print("Cant find the word list as a parameter")
-            return sum(Spam_count.values())
-
         self.Data_preprocessed_file['Number_of_Spam_Word'] = self.Data_preprocessed_file['Tweet_Text'].map(
-            lambda x: Spam_word_count(x.split(' ')))
-
-        Swear_count = {}
-
-        def Swear_word_count(Word):
-            Swear_list = ['Burnt', 'Racism', 'Gun', 'Missiles', 'Suck', 'Fuck', 'Fucked', 'Rape', 'Racist', 'Firework']
-            for i in Swear_list:
-                try:
-                    Swear_count[i] = Word.count(i)
-                except ValueError:
-                    print("Cant find the word list as a parameter")
-            return sum(Swear_count.values())
+            lambda x: PreProcessing.spam_word_count_lambda(x.split(' ')))
 
         self.Data_preprocessed_file['Number_of_Swear_Word'] = self.Data_preprocessed_file['Tweet_Text'].map(
-            lambda x: Swear_word_count(x.split(' ')))
+            lambda x: PreProcessing.swear_word_count_lambda(x.split(' ')))
         self.Data_preprocessed_file['New_Feature'] = self.Data_preprocessed_file['No_of_hash_word'] + \
                                                      self.Data_preprocessed_file['No_of_@_word'] + \
                                                      self.Data_preprocessed_file['Number_of_URL'] + \
@@ -95,7 +77,7 @@ class Data_preprocessing(object):
 
         try:
             prefix_pre = '_feature_selected.csv'
-            file_name = type + prefix_pre
+            file_name = self.type + prefix_pre
             self.Data_preprocessed_file.to_csv(file_name, sep=',', index=False)
         except PermissionError:
             print("file is opened by someone, please rerun after closing the file")
@@ -105,12 +87,44 @@ class Data_preprocessing(object):
         header = ["Retweets", "Favorites", "New_Feature", "Class"]
         try:
             prefix = '_feature_extracted.csv'
-            file_name = type + prefix
+            file_name = self.type + prefix
             self.Data_preprocessed_file.to_csv(file_name, columns=header, sep=',', index=False)
         except PermissionError:
             print("file is opened by someone, please rerun after closing the file")
 
+    @staticmethod
+    def process_date_lambda(x):
+        try:
+            return x[x.find("[") + 1: x.find("]") - 1]
+        except (ValueError, SyntaxError) as e:
+            print("Check the data in a file")
+            print(e)
+
+    @staticmethod
+    def spam_word_count_lambda(word):
+        spam_count = {}
+        spam_list = ['Zoo', 'Tiger', 'Little girl', 'penguin']
+        for i in spam_list:
+            try:
+                spam_count[i] = word.count(i)
+            except ValueError:
+                print("Cant find the word list as a parameter")
+        return sum(spam_count.values())
+
+    @staticmethod
+    def swear_word_count_lambda(word):
+        swear_count = {}
+        swear_list = ['Burnt', 'Racism', 'Gun', 'Missiles', 'Suck', 'Fuck', 'Fucked', 'Rape', 'Racist', 'Firework']
+        for i in swear_list:
+            try:
+                swear_count[i] = word.count(i)
+            except ValueError:
+                print("Cant find the word list as a parameter")
+        return sum(swear_count.values())
+
 
 if __name__ == "__main__":
-    training = Data_preprocessing('../Data/RawTrainingDataSet.csv', 'Training')
-    test = Data_preprocessing('../Data/RawTestDataSet.csv', 'Test')
+    training = PreProcessing('../Data/RawTrainingDataSet.csv', 'Training')
+    training.process()
+    test = PreProcessing('../Data/RawTestDataSet.csv', 'Test')
+    test.process()
