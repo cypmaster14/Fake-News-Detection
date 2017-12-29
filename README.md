@@ -1,11 +1,7 @@
-# Required Python Packages:
+## Python Dependencies:
 
-- matplotlib
-- numpy
-- scipy
-- sklearn
-- scikit-learn
-- pandas
-- flask
-- sqlalchemy
-- psycopg2
+To solve Python dependencies run the following command:
+```
+pip install -r Src/requirements.txt
+
+```
