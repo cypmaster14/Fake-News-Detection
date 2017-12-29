@@ -8,8 +8,8 @@ warnings.filterwarnings("ignore")
 
 cfg.dir
 pd.set_option('display.max_colwidth', 30000)
-My_col = ['Date', 'Tweet_Text', 'Tweet_Id', 'User_Id', 'User_Name', 'User_Screen_Name', 'Retweets', 'Favorites',
-          'Class']
+columns_header = ['Date', 'Tweet_Text', 'Tweet_Id', 'User_Id', 'User_Name', 'User_Screen_Name', 'Retweets', 'Favorites',
+                  'Class']
 
 
 class PreProcessing(object):
@@ -17,12 +17,16 @@ class PreProcessing(object):
     def __init__(self, file_name, file_type):
         self.file_name = file_name
         self.type = file_type
+    #
+    # def __init__(self):
+    #     pass
 
     def process(self):
 
         try:
-            raw_file = pd.read_csv(self.file_name, sep=',', usecols=My_col, index_col=None, quoting=3, encoding='utf-8')
-            self.Data_preprocessed_file = raw_file.dropna(subset=My_col)
+            raw_file = pd.read_csv(self.file_name, sep=',', usecols=columns_header, index_col=None, quoting=3,
+                                   encoding='utf-8')
+            self.Data_preprocessed_file = raw_file.dropna(subset=columns_header)
         except (FileNotFoundError, FileExistsError, MemoryError) as e:
             print("file is not in correct format")
             print(e)
@@ -57,7 +61,7 @@ class PreProcessing(object):
             lambda x: len(x.translate(str.maketrans('', '', whitespace))))
         self.Data_preprocessed_file['Number_of_URL'] = self.Data_preprocessed_file['Tweet_Text'].map(
             lambda x: x.count('http*'))
-        self.Data_preprocessed_file['No_of_@_word'] = self.Data_preprocessed_file['Tweet_Text'].map(
+        self.Data_preprocessed_file['No_of_arond_word'] = self.Data_preprocessed_file['Tweet_Text'].map(
             lambda x: x.count('@'))
         self.Data_preprocessed_file['No_of_hash_word'] = self.Data_preprocessed_file['Tweet_Text'].map(
             lambda x: x.count('#'))
@@ -70,7 +74,7 @@ class PreProcessing(object):
         self.Data_preprocessed_file['Number_of_Swear_Word'] = self.Data_preprocessed_file['Tweet_Text'].map(
             lambda x: PreProcessing.swear_word_count_lambda(x.split(' ')))
         self.Data_preprocessed_file['New_Feature'] = self.Data_preprocessed_file['No_of_hash_word'] + \
-                                                     self.Data_preprocessed_file['No_of_@_word'] + \
+                                                     self.Data_preprocessed_file['No_of_arond_word'] + \
                                                      self.Data_preprocessed_file['Number_of_URL'] + \
                                                      self.Data_preprocessed_file['Number_of_Swear_Word'] + \
                                                      self.Data_preprocessed_file['Number_of_Spam_Word']
@@ -91,6 +95,27 @@ class PreProcessing(object):
             self.Data_preprocessed_file.to_csv(file_name, columns=header, sep=',', index=False)
         except PermissionError:
             print("file is opened by someone, please rerun after closing the file")
+
+    def process_tweet(self, tweet: dict) -> dict:
+        process_data = dict(tweet)
+        process_data['Date'] = PreProcessing.process_date_lambda(tweet['Date'])
+        process_data['Tweet_Text'] = tweet['Tweet_Text']
+        process_data['Tweet_length'] = len(tweet["Tweet_Text"].translate(str.maketrans('', '', whitespace)))
+        process_data['Number_of_URL'] = tweet['Tweet_Text'].count('http*')
+        process_data['No_of_arond_word'] = tweet['Tweet_Text'].count('@')
+        process_data['No_of_hash_word'] = tweet['Tweet_Text'].count('#')
+        process_data['Length_of_User_Name'] = len(str(tweet['User_Screen_Name']))
+        process_data['Number_of_Spam_Word'] = PreProcessing.spam_word_count_lambda(tweet['Tweet_Text'].split(' '))
+        process_data['Number_of_Swear_Word'] = PreProcessing.swear_word_count_lambda(tweet['Tweet_Text'].split(' '))
+        process_data['New_Feature'] = process_data['No_of_hash_word'] + \
+                                      process_data['No_of_@_word'] + \
+                                      process_data['Number_of_URL'] + \
+                                      process_data['Number_of_Swear_Word'] + \
+                                      process_data['Number_of_Spam_Word']
+
+        header = ["Retweets", "Favorites", "New_Feature", ]
+        processed_data = dict(zip(header, [process_data[key] for key in header]))
+        return processed_data
 
     @staticmethod
     def process_date_lambda(x):

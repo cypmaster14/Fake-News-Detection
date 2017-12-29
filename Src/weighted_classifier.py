@@ -10,14 +10,14 @@ import pandas as pd
 
 cfg.dir
 
-My_col = ['Retweets', 'Favorites', 'New_Feature', 'Class']
+columns_header = ['Retweets', 'Favorites', 'New_Feature', 'Class']
 
 if __name__ == "__main__":
     nb_classifier = nb.NbClassifier('Training_feature_extracted.csv')
     KnnClassifier = knn.KNNClassifier('Training_feature_extracted.csv')
     SvmClassifier = svm.SVMClassifier('Training_feature_extracted.csv')
 
-    test_file = pd.read_csv('Test_feature_extracted.csv', sep=',', usecols=My_col, index_col=None)
+    test_file = pd.read_csv('Test_feature_extracted.csv', sep=',', usecols=columns_header, index_col=None)
     test_data = np.array([test_file['Retweets'], test_file['Favorites'], test_file['New_Feature']])
     test_data = np.array(test_file.values[:, :3])
     test_data_class = test_file.Class
