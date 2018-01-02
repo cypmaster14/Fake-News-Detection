@@ -14,9 +14,10 @@ columns_header = ['Date', 'Tweet_Text', 'Tweet_Id', 'User_Id', 'User_Name', 'Use
 
 class PreProcessing(object):
 
-    def __init__(self, file_name, file_type):
+    def __init__(self, file_name=None, file_type=None):
         self.file_name = file_name
         self.type = file_type
+
     #
     # def __init__(self):
     #     pass
@@ -108,7 +109,7 @@ class PreProcessing(object):
         process_data['Number_of_Spam_Word'] = PreProcessing.spam_word_count_lambda(tweet['Tweet_Text'].split(' '))
         process_data['Number_of_Swear_Word'] = PreProcessing.swear_word_count_lambda(tweet['Tweet_Text'].split(' '))
         process_data['New_Feature'] = process_data['No_of_hash_word'] + \
-                                      process_data['No_of_@_word'] + \
+                                      process_data['No_of_arond_word'] + \
                                       process_data['Number_of_URL'] + \
                                       process_data['Number_of_Swear_Word'] + \
                                       process_data['Number_of_Spam_Word']
